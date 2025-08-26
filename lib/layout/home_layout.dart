@@ -3,8 +3,10 @@ import 'package:intl/intl.dart';
 import 'package:login_design/modules/archived_tasks/archived_tasks_screen.dart';
 import 'package:login_design/modules/done_tasks/done_tasks_screen.dart';
 import 'package:login_design/modules/new_tasks/new_tasks_screen.dart';
-import 'package:sqflite/sqflite.dart';
+// import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // تم إضافته
+import 'package:path/path.dart';
+
 
 class HomeLayout extends StatefulWidget {
   const HomeLayout({super.key});
@@ -17,7 +19,6 @@ class _HomeLayoutState extends State<HomeLayout> {
   int currentIndex = 0;
 
   // databaseFactory = databaseFactoryFfi;
-
 
   Database? database;
 
@@ -82,6 +83,23 @@ class _HomeLayoutState extends State<HomeLayout> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+
+                                    Text(
+            'Delete',
+            style: TextStyle(
+              color: const Color.fromARGB(255, 156, 19, 10),
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+
+          FloatingActionButton(
+            child: Icon(Icons.delete_forever_outlined, size: 50),
+            onPressed: () {
+              deleteDatabaseFile();
+            },
+          ),
+
                           TextFormField(
                             controller: titleController,
                             keyboardType: TextInputType.text,
@@ -89,7 +107,7 @@ class _HomeLayoutState extends State<HomeLayout> {
                               if (value!.isEmpty) {
                                 return 'title must not be null';
                               }
-                              return value;
+                              return null;
                             },
                             decoration: const InputDecoration(
                               label: Text('Task Title'),
@@ -117,7 +135,7 @@ class _HomeLayoutState extends State<HomeLayout> {
                               if (value!.isEmpty) {
                                 return 'Time must not be null';
                               }
-                              return value;
+                              return null;
                             },
                             decoration: const InputDecoration(
                               label: Text('Task Time'),
@@ -140,13 +158,14 @@ class _HomeLayoutState extends State<HomeLayout> {
                                 dateController.text = DateFormat.yMMMd().format(
                                   value!,
                                 );
+                                print(dateController.text);
                               });
                             },
                             validator: (value) {
                               if (value!.isEmpty) {
                                 return 'Date must not be null';
                               }
-                              return value;
+                              return null;
                             },
                             decoration: const InputDecoration(
                               label: Text('Task Date'),
@@ -204,26 +223,35 @@ class _HomeLayoutState extends State<HomeLayout> {
   //   return 'Ahmed Ali';
   // }
 
+    void deleteDatabaseFile() async {
+    String databasePath = await getDatabasesPath();
+    String path = join(databasePath, 'todo.db');
+    await deleteDatabase(path);
+  }
+
   void createDatabase() async {
+    String databasePath = await getDatabasesPath();
+    String path = join(databasePath, 'todoA.db');
     database = await openDatabase(
-      'todo.db',
+      path,
       version: 1,
       onCreate: (database, version) {
-        print('database created');
+        print(" === DataBase Created ==== ");
+
         database
             .execute(
-              'CREATE TABLE tasks(id INTEGER PRIMARY KEY, title TEXT, date TEXT, time TEXT, status TEXT)',
+              'CREATE TABLE tasks (id INTEGER PRIMARY KEY, title TEXT, date TEXT, time TEXT, status TEXT)',
             )
             .then((value) {
-              print('table created');
+              print(" === Table Created === ");
             })
             .catchError((error) {
-              print('error is: ${error.toString()}');
+              print(" === Catching Error When Table = ${error.toString()}");
             });
       },
       onOpen: (database) {
         getDataFromDatabase(database);
-        print('database opened');
+        print(" === DataBase Opened ===");
       },
     );
   }
@@ -236,19 +264,19 @@ class _HomeLayoutState extends State<HomeLayout> {
     return await database!.transaction((txn) {
       return txn
           .rawInsert(
-            'INSERT INTO tasks (title, date, time, status) VALUES("$title","$time","$date","new")',
+            'INSERT INTO tasks (title, date, time, status) VALUES("$title","$date","$time","new")',
           )
           .then((value) {
-            print('$value Insert successful');
+            print(" === $value Insert Done === ");
           })
           .catchError((error) {
-            print('error of insert is: ${error.toString()}');
+            print("Error When Inserting = ${error.toString()}");
           });
     });
   }
 
   void getDataFromDatabase(database) async {
-    List<Map> tasks = await database!.rawQuery('SELECT * FROM tasks');
+    List<Map> tasks = await database.rawQuery('SELECT * FROM tasks');
     print(tasks);
   }
 }
